@@ -9,13 +9,27 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Haptic Speak"
+        android:textColor="@android:color/white"
+        android:textSize="37sp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"/>
+
+    <!-- Detected Speech TextView -->
+    <TextView
         android:id="@+id/speechTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Detected Speech:"
+        android:textColor="@android:color/white"
         android:textSize="18sp"
-        android:layout_centerInParent="true"/>
+        android:layout_centerInParent="true"
+        android:layout_marginTop="16dp"/>
 
+    <!-- Toggle Button -->
     <ToggleButton
         android:id="@+id/speechToggleButton"
         android:layout_width="wrap_content"
@@ -28,36 +42,4 @@
 
 </RelativeLayout>
 
-<!--<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
-<!--    xmlns:tools="http://schemas.android.com/tools"-->
-<!--    android:layout_width="match_parent"-->
-<!--    android:layout_height="match_parent"-->
-<!--    android:fitsSystemWindows="true"-->
-<!--    tools:context=".MainActivity">-->
-
-<!--    <com.google.android.material.appbar.AppBarLayout-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:fitsSystemWindows="true">-->
-
-<!--        <com.google.android.material.appbar.MaterialToolbar-->
-<!--            android:id="@+id/toolbar"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="?attr/actionBarSize" />-->
-
-<!--    </com.google.android.material.appbar.AppBarLayout>-->
-
-<!--    <include layout="@layout/content_main" />-->
-
-<!--    <com.google.android.material.floatingactionbutton.FloatingActionButton-->
-<!--        android:id="@+id/fab"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_gravity="bottom|end"-->
-<!--        android:layout_marginEnd="@dimen/fab_margin"-->
-<!--        android:layout_marginBottom="16dp"-->
-<!--        app:srcCompat="@android:drawable/ic_dialog_email" />-->
-
-<!--</androidx.coordinatorlayout.widget.CoordinatorLayout>-->
 

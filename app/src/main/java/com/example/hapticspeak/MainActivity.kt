@@ -22,6 +22,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.content.Intent
 import java.util.Locale
+import android.graphics.Typeface
+import android.graphics.Paint
 
 class MainActivity : AppCompatActivity() {
 
@@ -58,6 +60,14 @@ class MainActivity : AppCompatActivity() {
                 stopListening()
             }
         }
+
+        // Set title TextView properties
+        val titleTextView: TextView = findViewById(R.id.titleTextView)
+        titleTextView.text = "Haptic Speak"
+        titleTextView.setTextColor(ContextCompat.getColor(this, android.R.color.white))
+        titleTextView.textSize = 37f
+        titleTextView.setTypeface(null, Typeface.BOLD)
+        titleTextView.paintFlags = titleTextView.paintFlags or Paint.UNDERLINE_TEXT_FLAG
     }
 
     private fun startListening() {
