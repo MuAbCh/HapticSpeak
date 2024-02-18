@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.speech.RecognitionListener
@@ -21,6 +22,12 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 import android.view.View
 import android.widget.Toast
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
+import java.io.IOException
+import java.io.OutputStream
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -40,6 +47,18 @@ class MainActivity : AppCompatActivity() {
     )
     private val REQUEST_CODE = 123
 
+    // ************** Bluetooth Part *****************
+
+    private lateinit var bluetoothAdapter: BluetoothAdapter
+    private var bluetoothDevice: BluetoothDevice? = null
+    private lateinit var bluetoothSocket: BluetoothSocket
+    private lateinit var outputStream: OutputStream
+
+
+
+    // ************** Bluetooth Part End *************
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +68,37 @@ class MainActivity : AppCompatActivity() {
         // Initialize SpeechRecognizer
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(recognitionListener)
+
+        // ************** Bluetooth Part *****************
+
+        // Initialize Bluetooth adapter
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+        // Check if Bluetooth is supported on the device
+        if (bluetoothAdapter == null) {
+            // Device doesn't support Bluetooth
+            return
+        }
+
+        // Request to enable Bluetooth if it's not enabled
+        if (!bluetoothAdapter.isEnabled) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+        }
+
+
+
+        // Connect to the Bluetooth device
+        connectToDevice()
+
+//        // Setup Morse code button click listener
+//        binding.transmitMorseButton.setOnClickListener {
+//            val morseCode =
+//                "SETUP"
+//            sendMorseCodeToArduino(morseCode)
+//        }
+
+        // ************** Bluetooth Part End *************
 
         // Initialize TextToSpeech
         tts = TextToSpeech(this, OnInitListener { status ->
@@ -96,10 +146,67 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Method to handle Morse code transmission button click
-    fun transmitMorseCode(view: View) {
-        handleTap()
+    // ********** Bluetooth part **********
+    private fun getPairedDeviceByName(deviceName: String): BluetoothDevice? {
+        // Check if the app has Bluetooth permissions
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+
+            // Permissions are granted, proceed to access Bluetooth devices
+            val pairedDevices = bluetoothAdapter.bondedDevices
+            for (device in pairedDevices) {
+                if (device.name == deviceName) {
+                    return device
+                }
+            }
+            return null // Device not found
+        } else {
+            // Request Bluetooth permissions
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    Manifest.permission.BLUETOOTH,
+                    Manifest.permission.BLUETOOTH_ADMIN,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ),
+                BLUETOOTH_PERMISSION_REQUEST_CODE
+            )
+            // Permissions not granted yet, return null
+            return null
+        }
     }
+
+
+    @SuppressLint("MissingPermission")
+    private fun connectToDevice() {
+        val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB") // Standard SerialPortService ID
+        bluetoothDevice?.let { device ->
+            bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
+            try {
+                bluetoothSocket.connect()
+                outputStream = bluetoothSocket.outputStream
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+
+    private fun sendMorseCodeToArduino(morseCode: String) {
+        try {
+            outputStream.write(morseCode.toByteArray())
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // ************** Bluetooth Part End *************
+
+//    // Method to handle Morse code transmission button click
+//    fun transmitMorseCode(view: View) {
+//        handleTap()
+//    }
 
     private fun arePermissionsGranted(): Boolean {
         for (permission in PERMISSIONS) {
@@ -121,11 +228,20 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQUEST_CODE) {
             if (arePermissionsGranted()) {
                 // Permissions granted, proceed with your logic
+                val bluetoothDevice = getPairedDeviceByName("HC-06")
+                if (bluetoothDevice != null) {
+                    // Do something with the Bluetooth device, for example, connect to it
+                    connectToDevice()
+                } else {
+                    // Device not found, handle this situation
+                }
             } else {
                 // Permissions not granted, handle accordingly (e.g., show a message to the user)
+                Toast.makeText(this, "Bluetooth permissions are required for this app to function.", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
 
 
     private fun startListening() {
@@ -223,6 +339,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private val recognitionListener = object : RecognitionListener {
+
         override fun onResults(results: Bundle?) {
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             if (matches != null && matches.isNotEmpty()) {
@@ -233,6 +350,8 @@ class MainActivity : AppCompatActivity() {
                 val morseCode = convertToMorse(detectedSpeech)
                 // Display Morse code under the start button
                 binding.morseCodeTextView.text = "Morse Code: $morseCode"
+                // Send Morse code to Arduino
+                sendMorseCodeToArduino(morseCode)
             }
         }
 
@@ -253,6 +372,7 @@ class MainActivity : AppCompatActivity() {
                 morseCodeBuilder.append(morse ?: "")
                 morseCodeBuilder.append(" ") // Add space between characters
             }
+            // send the morseCodeBuilder string to the Arduino
             return morseCodeBuilder.toString()
         }
 
@@ -268,17 +388,20 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Release SpeechRecognizer resources
-        speechRecognizer.destroy()
-        // Release TextToSpeech resources
-        if (::tts.isInitialized) {
-            tts.stop()
-            tts.shutdown()
+        // Close the Bluetooth socket and release resources
+        try {
+            outputStream.close()
+            bluetoothSocket.close()
+            speechRecognizer.destroy()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     companion object {
         private const val RECORD_AUDIO_PERMISSION_CODE = 101
+        private const val REQUEST_ENABLE_BT = 1
+        private const val BLUETOOTH_PERMISSION_REQUEST_CODE = 10
     }
 
 //    override fun onCreateOptionsMenu(menu: Menu): Boolean {
