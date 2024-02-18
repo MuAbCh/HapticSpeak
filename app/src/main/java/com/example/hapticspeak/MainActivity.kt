@@ -19,6 +19,7 @@ import android.graphics.Paint
 import android.widget.Button
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
+import android.view.View
 import android.widget.Toast
 
 class MainActivity : AppCompatActivity() {
@@ -28,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     private var isSpeechDetectionOn: Boolean = false
     private lateinit var tts: TextToSpeech
 
-    private val DOT_THRESHOLD = 800 // Adjust as needed
+    private val DOT_THRESHOLD = 1000 // Adjust as needed
     private val TIME_FRAME = 1000 // Adjust as needed
     private var tapCount = 0
     private var lastTapTime: Long = 0
@@ -76,7 +77,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Set title TextView properties
+        // Set title TextView propertiesa
         val titleTextView: TextView = findViewById(R.id.titleTextView)
         titleTextView.text = "Haptic Speak"
         titleTextView.setTextColor(ContextCompat.getColor(this, android.R.color.white))
@@ -84,15 +85,20 @@ class MainActivity : AppCompatActivity() {
         titleTextView.setTypeface(null, Typeface.BOLD)
         titleTextView.paintFlags = titleTextView.paintFlags or Paint.UNDERLINE_TEXT_FLAG
 
-        // Setup Morse code button click listener
-        binding.transmitMorseButton.setOnClickListener {
-            handleTap()
-        }
+//        // Setup Morse code button click listener
+//        binding.transmitMorseButton.setOnClickListener {
+//            handleTap()
+//        }
 
         // Check and request permissions if needed
         if (!arePermissionsGranted()) {
             ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_CODE)
         }
+    }
+
+    // Method to handle Morse code transmission button click
+    fun transmitMorseCode(view: View) {
+        handleTap()
     }
 
     private fun arePermissionsGranted(): Boolean {
