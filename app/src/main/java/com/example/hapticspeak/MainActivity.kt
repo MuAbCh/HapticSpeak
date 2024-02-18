@@ -88,33 +88,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val recognitionListener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) {}
-
-        override fun onBeginningOfSpeech() {}
-
-        override fun onRmsChanged(rmsdB: Float) {}
-
-        override fun onBufferReceived(buffer: ByteArray?) {}
-
-        override fun onEndOfSpeech() {}
-
-        override fun onError(error: Int) {}
-
         override fun onResults(results: Bundle?) {
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             if (matches != null && matches.isNotEmpty()) {
                 val detectedSpeech = matches[0]
                 // Display the detected speech in the TextView
                 binding.speechTextView.text = "Detected Speech: $detectedSpeech"
-                // Commented out the code related to vibration
-                // convertToMorseAndVibrate(detectedSpeech)
+                // Convert detectedSpeech to Morse code
+                val morseCode = convertToMorse(detectedSpeech)
+                // Display Morse code under the start button
+                binding.morseCodeTextView.text = "Morse Code: $morseCode"
             }
         }
 
-        override fun onPartialResults(partialResults: Bundle?) {}
+        private fun convertToMorse(detectedSpeech: String): String {
+            val morseCodeMap = mapOf(
+                'A' to ".-", 'B' to "-...", 'C' to "-.-.", 'D' to "-..", 'E' to ".", 'F' to "..-.",
+                'G' to "--.", 'H' to "....", 'I' to "..", 'J' to ".---", 'K' to "-.-", 'L' to ".-..",
+                'M' to "--", 'N' to "-.", 'O' to "---", 'P' to ".--.", 'Q' to "--.-", 'R' to ".-.",
+                'S' to "...", 'T' to "-", 'U' to "..-", 'V' to "...-", 'W' to ".--", 'X' to "-..-",
+                'Y' to "-.--", 'Z' to "--..",
+                '0' to "-----", '1' to ".----", '2' to "..---", '3' to "...--", '4' to "....-",
+                '5' to ".....", '6' to "-....", '7' to "--...", '8' to "---..", '9' to "----.",
+                ' ' to "/" // Use '/' as a word separator in Morse code
+            )
+            val morseCodeBuilder = StringBuilder()
+            for (char in detectedSpeech.toUpperCase()) {
+                val morse = morseCodeMap[char]
+                morseCodeBuilder.append(morse ?: "")
+                morseCodeBuilder.append(" ") // Add space between characters
+            }
+            return morseCodeBuilder.toString()
+        }
 
+        override fun onReadyForSpeech(params: Bundle?) {}
+        override fun onBeginningOfSpeech() {}
+        override fun onRmsChanged(rmsdB: Float) {}
+        override fun onBufferReceived(buffer: ByteArray?) {}
+        override fun onEndOfSpeech() {}
+        override fun onError(error: Int) {}
+        override fun onPartialResults(partialResults: Bundle?) {}
         override fun onEvent(eventType: Int, params: Bundle?) {}
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
