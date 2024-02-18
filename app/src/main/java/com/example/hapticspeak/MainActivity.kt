@@ -33,6 +33,13 @@ class MainActivity : AppCompatActivity() {
     private var tapCount = 0
     private var lastTapTime: Long = 0
 
+    private val PERMISSIONS = arrayOf(
+        Manifest.permission.INTERNET,
+        Manifest.permission.RECORD_AUDIO
+    )
+    private val REQUEST_CODE = 123
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -81,7 +88,39 @@ class MainActivity : AppCompatActivity() {
         binding.transmitMorseButton.setOnClickListener {
             handleTap()
         }
+
+        // Check and request permissions if needed
+        if (!arePermissionsGranted()) {
+            ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_CODE)
+        }
     }
+
+    private fun arePermissionsGranted(): Boolean {
+        for (permission in PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
+        }
+        return true
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE) {
+            if (arePermissionsGranted()) {
+                // Permissions granted, proceed with your logic
+            } else {
+                // Permissions not granted, handle accordingly (e.g., show a message to the user)
+            }
+        }
+    }
+
 
     private fun startListening() {
         val recognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
