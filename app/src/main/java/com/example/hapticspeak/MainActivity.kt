@@ -1,36 +1,37 @@
 package com.example.hapticspeak
 
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import android.view.Menu
-import android.view.MenuItem
-import com.example.hapticspeak.databinding.ActivityMainBinding
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import android.Manifest
-import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.widget.TextView
 import android.widget.ToggleButton
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import android.content.Intent
+import com.example.hapticspeak.databinding.ActivityMainBinding
 import java.util.Locale
 import android.graphics.Typeface
 import android.graphics.Paint
+import android.widget.Button
+import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.OnInitListener
+import android.widget.Toast
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var speechRecognizer: SpeechRecognizer
     private var isSpeechDetectionOn: Boolean = false
+    private lateinit var tts: TextToSpeech
+
+    private val DOT_THRESHOLD = 800 // Adjust as needed
+    private val TIME_FRAME = 1000 // Adjust as needed
+    private var tapCount = 0
+    private var lastTapTime: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +41,13 @@ class MainActivity : AppCompatActivity() {
         // Initialize SpeechRecognizer
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(recognitionListener)
+
+        // Initialize TextToSpeech
+        tts = TextToSpeech(this, OnInitListener { status ->
+            if (status != TextToSpeech.ERROR) {
+                tts.language = Locale.getDefault()
+            }
+        })
 
         // Request RECORD_AUDIO permission if not granted
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
@@ -68,6 +76,11 @@ class MainActivity : AppCompatActivity() {
         titleTextView.textSize = 37f
         titleTextView.setTypeface(null, Typeface.BOLD)
         titleTextView.paintFlags = titleTextView.paintFlags or Paint.UNDERLINE_TEXT_FLAG
+
+        // Setup Morse code button click listener
+        binding.transmitMorseButton.setOnClickListener {
+            handleTap()
+        }
     }
 
     private fun startListening() {
@@ -86,6 +99,83 @@ class MainActivity : AppCompatActivity() {
         speechRecognizer.stopListening()
         isSpeechDetectionOn = false
     }
+
+    private fun handleTap() {
+        val currentTime = System.currentTimeMillis()
+        val timeSinceLastTap = currentTime - lastTapTime
+        if (timeSinceLastTap > TIME_FRAME) {
+            // Reset tap count if it's been too long since the last tap
+            tapCount = 0
+        }
+        tapCount++
+        translateTapToMorse(tapCount)
+        lastTapTime = currentTime
+    }
+
+    private var morseCodeBuffer = StringBuilder()
+
+    private fun translateTapToMorse(tapCount: Int) {
+        when (tapCount) {
+            1 -> {
+                // Handle dot (.) in Morse code
+                // Example: Add dot to Morse code buffer
+                morseCodeBuffer.append('.')
+            }
+            2 -> {
+                // Handle dash (-) in Morse code
+                // Example: Add dash to Morse code buffer
+                morseCodeBuffer.append('-')
+            }
+            3 -> {
+                // Handle space ( ) in Morse code
+                // Example: Add space to Morse code buffer
+                // Translate accumulated Morse code to English and speak it
+                speakMorseCode(translateMorseToEnglish(morseCodeBuffer.toString()))
+                // Clear Morse code buffer for next word
+                morseCodeBuffer.clear()
+            }
+        }
+    }
+
+    // Function to speak Morse code translation
+    private fun speakMorseCode(morseCode: String) {
+        // Translate Morse code to English alphabets
+        val englishText = translateMorseToEnglish(morseCode)
+        // Check if text-to-speech is initialized
+        if (::tts.isInitialized) {
+            // Speak the translated English alphabets
+            tts.speak(englishText, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+    }
+
+    private fun translateMorseToEnglish(morseCode: String): String {
+        val morseToEnglishMap = mapOf(
+            ".-" to "A", "-..." to "B", "-.-." to "C", "-.." to "D", "." to "E",
+            "..-." to "F", "--." to "G", "...." to "H", ".." to "I", ".---" to "J",
+            "-.-" to "K", ".-.." to "L", "--" to "M", "-." to "N", "---" to "O",
+            ".--." to "P", "--.-" to "Q", ".-." to "R", "..." to "S", "-" to "T",
+            "..-" to "U", "...-" to "V", ".--" to "W", "-..-" to "X", "-.--" to "Y",
+            "--.." to "Z",
+            "-----" to "0", ".----" to "1", "..---" to "2", "...--" to "3", "....-" to "4",
+            "....." to "5", "-...." to "6", "--..." to "7", "---.." to "8", "----." to "9",
+            "/" to " " // Use '/' as a word separator in Morse code
+        )
+
+        val words = morseCode.split(" / ")
+        val englishStringBuilder = StringBuilder()
+
+        for (word in words) {
+            val characters = word.split(" ")
+            for (character in characters) {
+                val englishChar = morseToEnglishMap[character]
+                englishStringBuilder.append(englishChar ?: "")
+            }
+            englishStringBuilder.append(" ") // Add space between words
+        }
+
+        return englishStringBuilder.toString().trim()
+    }
+
 
     private val recognitionListener = object : RecognitionListener {
         override fun onResults(results: Bundle?) {
@@ -131,75 +221,34 @@ class MainActivity : AppCompatActivity() {
         override fun onEvent(eventType: Int, params: Bundle?) {}
     }
 
-
     override fun onDestroy() {
         super.onDestroy()
         // Release SpeechRecognizer resources
         speechRecognizer.destroy()
-    }
-
-// Commented out the code related to vibration
-    /*
-        private fun convertToMorseAndVibrate(detectedSpeech: String) {
-            // Morse code mapping
-            val morseCodeMap = mapOf(
-                'A' to ".-", 'B' to "-...", 'C' to "-.-.", 'D' to "-..", 'E' to ".", 'F' to "..-.",
-                'G' to "--.", 'H' to "....", 'I' to "..", 'J' to ".---", 'K' to "-.-", 'L' to ".-..",
-                'M' to "--", 'N' to "-.", 'O' to "---", 'P' to ".--.", 'Q' to "--.-", 'R' to ".-.",
-                'S' to "...", 'T' to "-", 'U' to "..-", 'V' to "...-", 'W' to ".--", 'X' to "-..-",
-                'Y' to "-.--", 'Z' to "--..",
-                '0' to "-----", '1' to ".----", '2' to "..---", '3' to "...--", '4' to "....-",
-                '5' to ".....", '6' to "-....", '7' to "--...", '8' to "---..", '9' to "----.",
-                ' ' to "/" // Use '/' as a word separator in Morse code
-            )
-
-            // Vibration patterns (example durations in milliseconds)
-            val dotDuration = 100L
-            val dashDuration = 300L
-            val interSymbolPause = 100L
-            val interLetterPause = 300L
-
-            val vibrator = context.getSystemService(VIBRATOR_SERVICE) as Vibrator?
-
-            for (char in detectedSpeech.upperCase()) {
-                val morseCode = morseCodeMap[char] ?: continue // Skip unknown characters
-
-                for (symbol in morseCode) {
-                    when (symbol) {
-                        '.' -> vibrator.vibrate(dotDuration)
-                        '-' -> vibrator.vibrate(dashDuration)
-                    }
-                    Thread.sleep(interSymbolPause)
-                }
-
-                Thread.sleep(interLetterPause)
-            }
+        // Release TextToSpeech resources
+        if (::tts.isInitialized) {
+            tts.stop()
+            tts.shutdown()
         }
-        */
+    }
 
     companion object {
         private const val RECORD_AUDIO_PERMISSION_CODE = 101
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
-    }
+//    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+//        // Inflate the menu; this adds items to the action bar if it is present.
+//        menuInflater.inflate(R.menu.menu_main, menu)
+//        return true
+//    }
+//
+//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+//        // Handle action bar item clicks here. The action bar will
+//        // automatically handle clicks on the Home/Up button, so long
+//        // as you specify a parent activity in AndroidManifest.xml.
+//        return when (item.itemId) {
+//            R.id.action_settings -> true
+//            else -> super.onOptionsItemSelected(item)
+//        }
+//    }
 }
