@@ -28,13 +28,21 @@ import android.bluetooth.BluetoothSocket
 import java.io.IOException
 import java.io.OutputStream
 import java.util.*
+import android.app.Activity
+import android.widget.EditText
+import androidx.activity.result.contract.ActivityResultContracts
 
 class MainActivity : AppCompatActivity() {
+
+    // Text to speech
+    private lateinit var textToSpeech: TextToSpeech
+    private lateinit var editText: EditText
+    // Text to speech end
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var speechRecognizer: SpeechRecognizer
     private var isSpeechDetectionOn: Boolean = false
-    private lateinit var tts: TextToSpeech
+//    private lateinit var tts: TextToSpeech
 
     private val DOT_THRESHOLD = 1000 // Adjust as needed
     private val TIME_FRAME = 1000 // Adjust as needed
@@ -91,21 +99,52 @@ class MainActivity : AppCompatActivity() {
         // Connect to the Bluetooth device
         connectToDevice()
 
-//        // Setup Morse code button click listener
-//        binding.transmitMorseButton.setOnClickListener {
-//            val morseCode =
-//                "SETUP"
-//            sendMorseCodeToArduino(morseCode)
-//        }
 
         // ************** Bluetooth Part End *************
 
-        // Initialize TextToSpeech
-        tts = TextToSpeech(this, OnInitListener { status ->
-            if (status != TextToSpeech.ERROR) {
-                tts.language = Locale.getDefault()
+        // Text to speech stuff end *************************
+
+        val transmitMorseButton = findViewById<Button>(R.id.transmitMorseButton)
+
+        textToSpeech = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val result = textToSpeech.setLanguage(Locale.getDefault())
+                if (result == TextToSpeech.LANG_MISSING_DATA
+                    || result == TextToSpeech.LANG_NOT_SUPPORTED
+                ) {
+                    Toast.makeText(this, "language is not supported", Toast.LENGTH_LONG).show()
+                }
             }
-        })
+        }
+
+        // Setup Morse code button click listener
+        transmitMorseButton.setOnClickListener {
+            val morseCode =
+                "SETUP"
+            handleTap()
+        }
+//        transmitMorseButton.setOnClickListener {
+//            if (editText.text.toString().trim().isNotEmpty()) {
+//                textToSpeech.speak(
+//                    editText.text.toString().trim(),
+//                    TextToSpeech.QUEUE_FLUSH,
+//                    null,
+//                    null
+//                )
+//            } else {
+//                Toast.makeText(this, "Required", Toast.LENGTH_LONG).show()
+//            }
+//        }
+
+
+        // Text to speech stuff end *************************
+
+        // Initialize TextToSpeech
+//        tts = TextToSpeech(this, OnInitListener { status ->
+//            if (status != TextToSpeech.ERROR) {
+//                tts.language = Locale.getDefault()
+//            }
+//        })
 
         // Request RECORD_AUDIO permission if not granted
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
@@ -135,10 +174,6 @@ class MainActivity : AppCompatActivity() {
         titleTextView.setTypeface(null, Typeface.BOLD)
         titleTextView.paintFlags = titleTextView.paintFlags or Paint.UNDERLINE_TEXT_FLAG
 
-//        // Setup Morse code button click listener
-//        binding.transmitMorseButton.setOnClickListener {
-//            handleTap()
-//        }
 
         // Check and request permissions if needed
         if (!arePermissionsGranted()) {
@@ -301,12 +336,14 @@ class MainActivity : AppCompatActivity() {
     // Function to speak Morse code translation
     private fun speakMorseCode(morseCode: String) {
         // Translate Morse code to English alphabets
-        val englishText = translateMorseToEnglish(morseCode)
-        // Check if text-to-speech is initialized
-        if (::tts.isInitialized) {
-            // Speak the translated English alphabets
-            tts.speak(englishText, TextToSpeech.QUEUE_FLUSH, null, null)
-        }
+        textToSpeech.speak(
+                    morseCode.trim(),
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    null
+                )
+
+
     }
 
     private fun translateMorseToEnglish(morseCode: String): String {
