@@ -96,8 +96,8 @@ class MainActivity : AppCompatActivity() {
                 val detectedSpeech = matches[0]
                 // Display the detected speech in the TextView
                 binding.speechTextView.text = "Detected Speech: $detectedSpeech"
-                // Convert detectedSpeech to Morse code and vibrate
-                convertToMorseAndVibrate(detectedSpeech)
+                // Commented out the code related to vibration
+                // convertToMorseAndVibrate(detectedSpeech)
             }
         }
 
@@ -112,42 +112,44 @@ class MainActivity : AppCompatActivity() {
         speechRecognizer.destroy()
     }
 
-    private fun convertToMorseAndVibrate(detectedSpeech: String) {
-        // Morse code mapping
-        val morseCodeMap = mapOf(
-            'A' to ".-", 'B' to "-...", 'C' to "-.-.", 'D' to "-..", 'E' to ".", 'F' to "..-.",
-            'G' to "--.", 'H' to "....", 'I' to "..", 'J' to ".---", 'K' to "-.-", 'L' to ".-..",
-            'M' to "--", 'N' to "-.", 'O' to "---", 'P' to ".--.", 'Q' to "--.-", 'R' to ".-.",
-            'S' to "...", 'T' to "-", 'U' to "..-", 'V' to "...-", 'W' to ".--", 'X' to "-..-",
-            'Y' to "-.--", 'Z' to "--..",
-            '0' to "-----", '1' to ".----", '2' to "..---", '3' to "...--", '4' to "....-",
-            '5' to ".....", '6' to "-....", '7' to "--...", '8' to "---..", '9' to "----.",
-            ' ' to "/" // Use '/' as a word separator in Morse code
-        )
+// Commented out the code related to vibration
+    /*
+        private fun convertToMorseAndVibrate(detectedSpeech: String) {
+            // Morse code mapping
+            val morseCodeMap = mapOf(
+                'A' to ".-", 'B' to "-...", 'C' to "-.-.", 'D' to "-..", 'E' to ".", 'F' to "..-.",
+                'G' to "--.", 'H' to "....", 'I' to "..", 'J' to ".---", 'K' to "-.-", 'L' to ".-..",
+                'M' to "--", 'N' to "-.", 'O' to "---", 'P' to ".--.", 'Q' to "--.-", 'R' to ".-.",
+                'S' to "...", 'T' to "-", 'U' to "..-", 'V' to "...-", 'W' to ".--", 'X' to "-..-",
+                'Y' to "-.--", 'Z' to "--..",
+                '0' to "-----", '1' to ".----", '2' to "..---", '3' to "...--", '4' to "....-",
+                '5' to ".....", '6' to "-....", '7' to "--...", '8' to "---..", '9' to "----.",
+                ' ' to "/" // Use '/' as a word separator in Morse code
+            )
 
-        // Vibration patterns (example durations in milliseconds)
-        val dotDuration = 100L
-        val dashDuration = 300L
-        val interSymbolPause = 100L
-        val interLetterPause = 300L
+            // Vibration patterns (example durations in milliseconds)
+            val dotDuration = 100L
+            val dashDuration = 300L
+            val interSymbolPause = 100L
+            val interLetterPause = 300L
 
-        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator?
+            val vibrator = context.getSystemService(VIBRATOR_SERVICE) as Vibrator?
 
-        for (char in detectedSpeech.upperCase()) {
-            val morseCode = morseCodeMap[char] ?: continue // Skip unknown characters
+            for (char in detectedSpeech.upperCase()) {
+                val morseCode = morseCodeMap[char] ?: continue // Skip unknown characters
 
-            for (symbol in morseCode) {
-                when (symbol) {
-                    '.' -> vibrator.vibrate(dotDuration)
-                    '-' -> vibrator.vibrate(dashDuration)
+                for (symbol in morseCode) {
+                    when (symbol) {
+                        '.' -> vibrator.vibrate(dotDuration)
+                        '-' -> vibrator.vibrate(dashDuration)
+                    }
+                    Thread.sleep(interSymbolPause)
                 }
-                Thread.sleep(interSymbolPause)
+
+                Thread.sleep(interLetterPause)
             }
-
-            Thread.sleep(interLetterPause)
         }
-    }
-
+        */
 
     companion object {
         private const val RECORD_AUDIO_PERMISSION_CODE = 101
